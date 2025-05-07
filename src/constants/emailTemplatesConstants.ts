@@ -1,0 +1,1 @@
+export const SendUserRegistrationOtpEmail = "send_user_registration_otp_email"

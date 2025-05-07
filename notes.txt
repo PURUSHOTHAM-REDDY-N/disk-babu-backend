@@ -1,0 +1,46 @@
+======================== DataBase ======================================================
+
+postgress : https://www.youtube.com/watch?v=DihOP19LQdg
+
+architecture and prisma : https://www.youtube.com/playlist?list=PLIGDNOJWiL1_ygbYCizW9ORMazELD9foK
+
+while querying in command line or pg admin we have to include the column name in double quotes
+because if we didn't do it will convert them to lowercase which we will get realtion not found error
+
+======================= aws Linux setup commands =======================================
+
+** while creating aws linux server allow http and https if you forgot check in security group 
+
+** Aws postgress database https://www.youtube.com/watch?v=I_fTQTsz2nQ
+
+1 sudo su --------- to get into root user
+
+2 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash ----- intsals the nvm
+
+3 . ~/.nvm/nvm.sh  -- this   adds the nvm into into the env variables
+
+4 nvm install 20 ---- installs the node version 20
+
+5 yum install -y  ----- installs the git 
+
+6 git --version  ------ to check if git is installed
+
+--------------------------- other usefull commands ------------
+
+1 ls -ltr   --- show all the files with details
+
+2 touch <file_name> ---- creates a file in the present directory
+
+3 rm <file_name>   ---  removes the file
+
+4 nano <file_name>  ---- to open the file for edit and [Ctrl+x to save and exit file]
+
+------------------------------------------------------------------------------
+
+kill the prooceess if already there
+
+https://superuser.com/questions/1567652/killing-a-node-process-restarts-with-a-new-pid
+
+
+increase memory space for node 
+export NODE_OPTIONS="--max-old-space-size=8192"
