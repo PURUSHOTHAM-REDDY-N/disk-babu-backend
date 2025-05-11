@@ -5,23 +5,20 @@ import * as usersService from "../services/users.service"
 
 const jwt = require("jsonwebtoken");
 
-const isValidToken = async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (token) {
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            Object.assign(req.body, {user: decoded});
-            return true;
-            // await isAtLeastUser(req, res, next);
-        } catch (error) {
-            // Token verification failed, send a 401 Unauthorized response
-            res.status(401).json({message: "Invalid token"});
-            return false;
-        }
-    } else {
-        res.status(403).json({message: "Unauthorized"});
-        return false;
+export const isValidToken = async (req: Request, res: Response, next: NextFunction) => {
+     const token = req.headers.authorization?.split(" ")[1];
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      Object.assign(req.body, { user: decoded });
+      next();
+    } catch (error) {      
+      // Token verification failed, send a 401 Unauthorized response
+      return res.status(401).json({ message: "Invalid token" });
     }
+  } else {
+    res.status(403).json({ message: "Unauthorized" });
+  }
 }
 
 export const isAtLeastUser = async (req: Request, res: Response, next: NextFunction) => {

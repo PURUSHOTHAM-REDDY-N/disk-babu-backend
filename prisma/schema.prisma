@@ -21,6 +21,9 @@ model User {
   createdAt  DateTime
   updatedAt  DateTime  @updatedAt
   role       UserRole  @default(USER)
+
+
+  FileAnalytics FileAnalytics[]
 }
 
 enum UserRole {
@@ -57,4 +60,33 @@ model EmailTemplate {
   subjectTemplate String
   created         DateTime @default(now())
   updated         DateTime @updatedAt
+}
+
+model File {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String?
+  fileUrl       String // uploaded file URL or external link
+  thumbnailUrl  String?
+  originalOwner String   @db.ObjectId // userId of original uploader
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  analytics FileAnalytics[] // daily/monthly analytics
+}
+
+
+model FileAnalytics {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  fileId   String   @db.ObjectId
+  userId   String   @db.ObjectId
+  date     DateTime // either start of day or start of month
+  views    Int      @default(0)
+  earnings Float    @default(0) // earnings for this user on this file in this period
+
+  file File @relation(fields: [fileId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([fileId, userId, date])
+  @@map("FileAnalytics")
 }
