@@ -40,17 +40,18 @@ router.get('/analytics/daily', isValidToken, async (req: Request, res: Response)
   }
 });
 
-router.get('/analytics/user/daily', isValidToken, async (req: Request, res: Response) => {
-  const { date } = req.query;
+router.post('/analytics/user/daily', isValidToken, async (req: Request, res: Response) => {
+  const { date } = req.body;
   const userId = req.body.user?.id;
+//   const timeZone = req.query.timezone || 'UTC';
 
   if (!date || !userId) {
     return res.status(400).json({ message: 'date is required' });
   }
 
   try {
-    const dateObj = new Date(date as string);
-    const result = await analyticsService.getUserDailyTotals(userId, dateObj);
+    // const dateObj = new Date(date as string);
+    const result = await analyticsService.getUserDailyTotals(userId, date);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -71,6 +72,28 @@ router.get('/analytics/user/monthly', isValidToken, async (req: Request, res: Re
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.get('/analytics/user/monthly-totals',isValidToken, async (req, res) => {
+  try {
+    const userId = req.body.user.id
+    const monthParam = req.query.month as string;
+
+    if (!userId || !monthParam) {
+      return res.status(400).json({ error: 'Missing userId or month query param' });
+    }
+
+    const month = new Date(`${monthParam}-01`);
+    if (isNaN(month.getTime())) {
+      return res.status(400).json({ error: 'Invalid month format. Use YYYY-MM' });
+    }
+
+    const result = await analyticsService.getUserMonthlyTotals(userId, month);
+    return res.json(result);
+  } catch (error) {
+    console.error('Error in monthly totals:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

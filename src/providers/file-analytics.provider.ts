@@ -1,13 +1,15 @@
 // src/providers/file-analytics.provider.ts
+import moment from "moment-timezone";
 import prisma from "../../prisma/prisma-client";
 import { getUserDailyFileCount, getUserFileUploadsByDate } from "./file.provider";
+import { start } from "repl";
 
 const RATE_PER_VIEW = 0.002;
 
 export const upsertDailyAnalytics = async (fileId: string, userId: string) => {
   const today = new Date();
-  today.setUTCHours(0, 0, 0, 0); // Normalize to start of day
-
+  const startIST = moment.tz(today, 'Asia/Kolkata').startOf('day').utc().toDate();
+today.setUTCHours(0, 0, 0, 0);
   return prisma.fileAnalytics.upsert({
     where: {
       fileId_userId_date: { fileId, userId, date: today },
@@ -19,7 +21,7 @@ export const upsertDailyAnalytics = async (fileId: string, userId: string) => {
     create: {
       fileId,
       userId,
-      date: today,
+      date: startIST,
       views: 1,
       earnings: RATE_PER_VIEW,
     },
@@ -31,6 +33,7 @@ export const getAnalyticsByDate = async (
   userId: string,
   date: Date
 ) => {
+    
   const day = new Date(date);
   day.setUTCHours(0, 0, 0, 0); // Normalize to start of that day
 
@@ -43,12 +46,15 @@ export const getAnalyticsByDate = async (
 
 export const getUserDailyTotalAnalytics = async (
   userId: string,
-  date: Date
+  date: string
 ) => {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+// const startIST = moment.tz(date).startOf('day').toISOString();
+// console.log("startIST", startIST);
+// startDate.setUTCHours(0, 0, 0, 0);
+// const formatted = moment(startDate).utc().format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
+const startIST = moment.tz(date, 'Asia/Kolkata').startOf('day').utc().toDate(); // IST start
+  const endIST = moment.tz(date, 'Asia/Kolkata').endOf('day').utc().toDate();     // IST end
+
 
   const [analytics, fileCount] = await Promise.all([
     prisma.fileAnalytics.aggregate({
@@ -59,8 +65,8 @@ export const getUserDailyTotalAnalytics = async (
       where: {
         userId,
         date: {
-          gte: start,
-          lt: end,
+           gte: startIST,
+          lte: endIST,
         },
       },
     }),
@@ -130,4 +136,26 @@ export const getUserMonthlyAnalytics = async (userId: string, month: Date) => {
   }
 
   return result;
+};
+
+// total views and earnings for a given user in a given month
+export const getUserFileAnalyticsByMonth = async (userId: string, start: Date, end: Date) => {
+  const result = await prisma.fileAnalytics.aggregate({
+    where: {
+      userId,
+      date: {
+        gte: start,
+        lt: end,
+      },
+    },
+    _sum: {
+      views: true,
+      earnings: true,
+    },
+  });
+
+  return {
+    views: result._sum.views || 0,
+    earnings: result._sum.earnings || 0,
+  };
 };

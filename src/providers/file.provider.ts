@@ -19,7 +19,7 @@ export const getById = async (id: string): Promise<File> => {
 };
 
 
-export const getUserDailyFileCount = async (userId: string, date: Date) => {
+export const getUserDailyFileCount = async (userId: string, date: string) => {
   const start = new Date(date);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
@@ -61,4 +61,19 @@ export const getUserFileUploadsByDate = async (userId: string, start: Date, end:
   }
 
   return filesMap;
+};
+
+// This function returns the count of files uploaded by a user in a given month
+export const getUserFileUploadCountByMonth = async (userId: string, start: Date, end: Date) => {
+  const count = await prisma.file.count({
+    where: {
+      originalOwner: userId,
+      createdAt: {
+        gte: start,
+        lt: end,
+      },
+    },
+  });
+
+  return count;
 };

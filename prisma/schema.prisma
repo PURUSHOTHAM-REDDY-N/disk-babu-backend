@@ -22,7 +22,6 @@ model User {
   updatedAt  DateTime  @updatedAt
   role       UserRole  @default(USER)
 
-
   FileAnalytics FileAnalytics[]
 }
 
@@ -75,15 +74,15 @@ model File {
   analytics FileAnalytics[] // daily/monthly analytics
 }
 
-
 model FileAnalytics {
   id       String   @id @default(auto()) @map("_id") @db.ObjectId
   fileId   String   @db.ObjectId
   userId   String   @db.ObjectId
-  date     DateTime // either start of day or start of month
+  date     DateTime   @db.Date
   views    Int      @default(0)
   earnings Float    @default(0) // earnings for this user on this file in this period
-
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   file File @relation(fields: [fileId], references: [id])
   user User @relation(fields: [userId], references: [id])
 
