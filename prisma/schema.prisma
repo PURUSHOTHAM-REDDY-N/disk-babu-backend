@@ -18,11 +18,12 @@ model User {
   dob        DateTime?
   country    String?
   image      String?
-  createdAt  DateTime
+  createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   role       UserRole  @default(USER)
 
   FileAnalytics FileAnalytics[]
+  Files         File[]
 }
 
 enum UserRole {
@@ -62,29 +63,41 @@ model EmailTemplate {
 }
 
 model File {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
   title         String
   description   String?
   fileUrl       String // uploaded file URL or external link
+  fileType      String // e.g., image, video, audio, document
+  fileSize      Int // size in bytes
   thumbnailUrl  String?
-  originalOwner String   @db.ObjectId // userId of original uploader
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  totalViews    Int             @default(0) // total number of views
+  uploadedDate  String          
+  originalOwner String          @db.ObjectId // userId of original uploader
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  status        FileStatus      @default(ACTIVE)
+  analytics     FileAnalytics[] // daily/monthly analytics
+  user          User            @relation(fields: [originalOwner], references: [id])
+}
 
-  analytics FileAnalytics[] // daily/monthly analytics
+enum FileStatus {
+  PROCESSING
+  ACTIVE
+  DISABLED
+  FAILED
 }
 
 model FileAnalytics {
-  id       String   @id @default(auto()) @map("_id") @db.ObjectId
-  fileId   String   @db.ObjectId
-  userId   String   @db.ObjectId
-  date     DateTime   @db.Date
-  views    Int      @default(0)
-  earnings Float    @default(0) // earnings for this user on this file in this period
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  file File @relation(fields: [fileId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  fileId    String   @db.ObjectId
+  userId    String   @db.ObjectId
+  date      DateTime @db.Date
+  views     Int      @default(0)
+  earnings  Float    @default(0) // earnings for this user on this file in this period
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  file      File     @relation(fields: [fileId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([fileId, userId, date])
   @@map("FileAnalytics")

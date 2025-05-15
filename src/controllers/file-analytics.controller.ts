@@ -1,11 +1,11 @@
 // src/controllers/file-analytics.controller.ts
-import { Router, Request, Response, NextFunction } from 'express';
+import e, { Router, Request, Response, NextFunction } from 'express';
 import * as analyticsService from '../services/file-analytics.service';
 import { isValidToken } from '../Middilewares/auth.middleware';
+import moment from 'moment';
 
 const router = Router();
 
-// POST /analytics/create
 router.post('/analytics/create', isValidToken, async (req: Request, res: Response) => {
   const { fileId } = req.body;
   const userId = req.body.user?.id;
@@ -23,8 +23,8 @@ router.post('/analytics/create', isValidToken, async (req: Request, res: Respons
 });
 
 // GET /analytics/daily?fileId=...
-router.get('/analytics/daily', isValidToken, async (req: Request, res: Response) => {
-  const { fileId, date } = req.query;
+router.get('/analytics/getAnalyticsByDateAndFile', isValidToken, async (req: Request, res: Response) => {
+  const { fileId, date } = req.body;
   const userId = req.body.user?.id;
 
   if (!fileId || !userId || !date) {
@@ -32,64 +32,56 @@ router.get('/analytics/daily', isValidToken, async (req: Request, res: Response)
   }
 
   try {
-    const dateObj = new Date(date as string);
-    const result = await analyticsService.getAnalyticsForDate(fileId as string, userId, dateObj);
+    const result = await analyticsService.getAnalyticsByDateAndFile(fileId as string, userId, date);
     res.json({ analytics: result });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });
 
-router.post('/analytics/user/daily', isValidToken, async (req: Request, res: Response) => {
+router.post('/analytics/getUserAnalyticsByDate', isValidToken, async (req: Request, res: Response) => {
   const { date } = req.body;
   const userId = req.body.user?.id;
-//   const timeZone = req.query.timezone || 'UTC';
 
   if (!date || !userId) {
     return res.status(400).json({ message: 'date is required' });
   }
 
   try {
-    // const dateObj = new Date(date as string);
-    const result = await analyticsService.getUserDailyTotals(userId, date);
+    const result = await analyticsService.getUserAnalyticsByDate(userId, date);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });
 
-router.get('/analytics/user/monthly', isValidToken, async (req: Request, res: Response) => {
-  const { month } = req.query;
+router.get('/analytics/getUserAnalyticsByMonth', isValidToken, async (req: Request, res: Response) => {
+  const { date } = req.body;
   const userId = req.body.user?.id;
 
-  if (!month || !userId) {
-    return res.status(400).json({ message: 'month is required' });
+  if (!date) {
+    return res.status(400).json({ message: 'date is required' });
   }
 
   try {
-    const date = new Date(month as string);
-    const result = await analyticsService.getUserMonthlyAnalytics(userId, date);
+    const result = await analyticsService.getUserAnalyticsByMonth(userId, date);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });
 
-router.get('/analytics/user/monthly-totals',isValidToken, async (req, res) => {
+router.get('/analytics/getUserMonthlyAnalyticsTotals',isValidToken, async (req, res) => {
   try {
     const userId = req.body.user.id
-    const monthParam = req.query.month as string;
-
-    if (!userId || !monthParam) {
+    const date = req.body.date
+const dateIst= moment.tz(date, "Asia/Kolkata").utc().toDate();
+    if (!userId || !dateIst) {
       return res.status(400).json({ error: 'Missing userId or month query param' });
     }
 
-    const month = new Date(`${monthParam}-01`);
-    if (isNaN(month.getTime())) {
-      return res.status(400).json({ error: 'Invalid month format. Use YYYY-MM' });
-    }
 
-    const result = await analyticsService.getUserMonthlyTotals(userId, month);
+    const result = await analyticsService.getUserMonthlyAnalyticsTotals(userId, dateIst);
     return res.json(result);
   } catch (error) {
     console.error('Error in monthly totals:', error);

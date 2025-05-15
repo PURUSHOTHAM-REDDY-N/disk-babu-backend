@@ -2,6 +2,7 @@
 import { FileAnalytics } from "@prisma/client";
 import * as provider from "../providers/file-analytics.provider";
 import { getUserFileUploadCountByMonth } from "../providers/file.provider";
+import moment from "moment";
 
 export const createOrUpdateDailyAnalytics = async (
   fileId: string,
@@ -10,12 +11,12 @@ export const createOrUpdateDailyAnalytics = async (
   return provider.upsertDailyAnalytics(fileId, userId);
 };
 
-export const getAnalyticsForDate = async (fileId: string, userId: string, date: Date) => {
-  return provider.getAnalyticsByDate(fileId, userId, date);
+export const getAnalyticsByDateAndFile = async (fileId: string, userId: string, date: Date) => {
+  return provider.getAnalyticsByDateAndFile(fileId, userId, date);
 };
 
 // gives daily total analytics for for a particular day
-export const getUserDailyTotals = async (
+export const getUserAnalyticsByDate = async (
   userId: string,
   date: string,
 ) => {
@@ -23,21 +24,22 @@ export const getUserDailyTotals = async (
 };
 
 // gives daily analytics for entire month
-export const getUserMonthlyAnalytics = async (userId: string, month: Date) => {
-  return await provider.getUserMonthlyAnalytics(userId, month);
+export const getUserAnalyticsByMonth = async (userId: string, date:Date) => {
+  return await provider.getUserAnalyticsByMonth(userId, date);
 };
 
-export const getUserMonthlyTotals = async (userId: string, month: Date) => {
-  const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
-  const endOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+export const getUserMonthlyAnalyticsTotals = async (userId: string, date: Date) => {
+
+  const startOfMonth = moment(date).startOf("month").toDate();
+  const endOfMonth = moment(date).endOf("month").toDate();
 
   const [analytics, uploadCount] = await Promise.all([
-    provider.getUserFileAnalyticsByMonth(userId, startOfMonth, endOfMonth),
-    getUserFileUploadCountByMonth(userId, startOfMonth, endOfMonth),
+    provider.getUserMonthlyAnalyticsTotals(userId, startOfMonth, endOfMonth),
+    getUserFileUploadCountByMonth(userId, startOfMonth),
   ]);
 
   return {
-    month: month.toISOString().slice(0, 7),
+    month: date.toISOString().slice(0, 7),
     views: analytics.views,
     earnings: analytics.earnings,
     uploads: uploadCount,
