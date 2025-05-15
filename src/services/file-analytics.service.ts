@@ -30,8 +30,8 @@ export const getUserAnalyticsByMonth = async (userId: string, date:Date) => {
 
 export const getUserMonthlyAnalyticsTotals = async (userId: string, date: Date) => {
 
-  const startOfMonth = moment(date).startOf("month").toDate();
-  const endOfMonth = moment(date).endOf("month").toDate();
+  const startOfMonth = moment.utc(date).startOf("month").toDate();
+  const endOfMonth = moment.utc(date).endOf("month").toDate();
 
   const [analytics, uploadCount] = await Promise.all([
     provider.getUserMonthlyAnalyticsTotals(userId, startOfMonth, endOfMonth),
@@ -39,7 +39,7 @@ export const getUserMonthlyAnalyticsTotals = async (userId: string, date: Date) 
   ]);
 
   return {
-    month: date.toISOString().slice(0, 7),
+    month: date,
     views: analytics.views,
     earnings: analytics.earnings,
     uploads: uploadCount,

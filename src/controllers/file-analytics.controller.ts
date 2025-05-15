@@ -71,17 +71,16 @@ router.get('/analytics/getUserAnalyticsByMonth', isValidToken, async (req: Reque
   }
 });
 
-router.get('/analytics/getUserMonthlyAnalyticsTotals',isValidToken, async (req, res) => {
+router.post('/analytics/getUserMonthlyAnalyticsTotals',isValidToken, async (req, res) => {
   try {
     const userId = req.body.user.id
     const date = req.body.date
-const dateIst= moment.tz(date, "Asia/Kolkata").utc().toDate();
-    if (!userId || !dateIst) {
+    if (!userId || !date) {
       return res.status(400).json({ error: 'Missing userId or month query param' });
     }
 
 
-    const result = await analyticsService.getUserMonthlyAnalyticsTotals(userId, dateIst);
+    const result = await analyticsService.getUserMonthlyAnalyticsTotals(userId, date);
     return res.json(result);
   } catch (error) {
     console.error('Error in monthly totals:', error);
