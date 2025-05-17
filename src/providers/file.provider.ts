@@ -7,7 +7,7 @@ export const createVideo = async (
   request: Omit<File, "id" | "createdAt" | "updatedAt" | "status">
 ): Promise<File> => {
   const today = moment.utc().toISOString();
-  const todayStart =moment.utc().startOf("day").toISOString();
+  const todayStart = moment.utc().startOf("day").toISOString();
   const video = await prisma.file.create({
     data: request,
   });
@@ -36,7 +36,7 @@ export const getFilesByUser = async (id: string): Promise<File[]> => {
   const video = await prisma.file.findMany({
     where: { originalOwner: id },
   });
-console.log("video", video);
+  console.log("video", video);
   return video;
 };
 
@@ -84,18 +84,10 @@ export const getUserFileUploadsByDate = async (
 // This function returns the count of files uploaded by a user in a given month
 export const getUserFileUploadCountByMonth = async (
   userId: string,
-  date: Date
+  date: string
 ) => {
-  const startOfMonth = moment
-    .tz(date, "Asia/Kolkata")
-    .startOf("month")
-    .utc()
-    .toDate();
-  const endOfMonth = moment
-    .tz(date, "Asia/Kolkata")
-    .endOf("month")
-    .utc()
-    .toDate();
+  const startOfMonth = moment.utc(date).startOf("month").toISOString();
+  const endOfMonth = moment.utc(date).endOf("month").toISOString();
   const count = await prisma.file.count({
     where: {
       originalOwner: userId,

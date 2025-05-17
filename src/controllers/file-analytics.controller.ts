@@ -22,22 +22,6 @@ router.post('/analytics/create', isValidToken, async (req: Request, res: Respons
   }
 });
 
-// GET /analytics/daily?fileId=...
-router.get('/analytics/getAnalyticsByDateAndFile', isValidToken, async (req: Request, res: Response) => {
-  const { fileId, date } = req.body;
-  const userId = req.body.user?.id;
-
-  if (!fileId || !userId || !date) {
-    return res.status(400).json({ message: 'fileId, userId, and date are required' });
-  }
-
-  try {
-    const result = await analyticsService.getAnalyticsByDateAndFile(fileId as string, userId, date);
-    res.json({ analytics: result });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-});
 
 router.post('/analytics/getUserAnalyticsByDate', isValidToken, async (req: Request, res: Response) => {
   const { date } = req.body;
@@ -55,7 +39,7 @@ router.post('/analytics/getUserAnalyticsByDate', isValidToken, async (req: Reque
   }
 });
 
-router.get('/analytics/getUserAnalyticsByMonth', isValidToken, async (req: Request, res: Response) => {
+router.post('/analytics/getUserAnalyticsByMonth', isValidToken, async (req: Request, res: Response) => {
   const { date } = req.body;
   const userId = req.body.user?.id;
 
@@ -71,17 +55,17 @@ router.get('/analytics/getUserAnalyticsByMonth', isValidToken, async (req: Reque
   }
 });
 
-router.get('/analytics/getUserMonthlyAnalyticsTotals',isValidToken, async (req, res) => {
+router.post('/analytics/getUserMonthlyAnalyticsTotals',isValidToken, async (req, res) => {
   try {
     const userId = req.body.user.id
-    const date = req.body.date
-const dateIst= moment.tz(date, "Asia/Kolkata").utc().toDate();
-    if (!userId || !dateIst) {
+    const date = req.body.date ;
+
+    if (!userId || !date) {
       return res.status(400).json({ error: 'Missing userId or month query param' });
     }
 
 
-    const result = await analyticsService.getUserMonthlyAnalyticsTotals(userId, dateIst);
+    const result = await analyticsService.getUserMonthlyAnalyticsTotals(userId, date);
     return res.json(result);
   } catch (error) {
     console.error('Error in monthly totals:', error);

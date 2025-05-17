@@ -9,8 +9,8 @@ datasource db {
 }
 
 model User {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
-  email      String    @unique
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  email      String        @unique
   firstName  String
   lastName   String
   middleName String?
@@ -18,12 +18,23 @@ model User {
   dob        DateTime?
   country    String?
   image      String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  role       UserRole  @default(USER)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  role       UserRole      @default(USER)
+  status     AccountStatus @default(ACTIVE)
 
   FileAnalytics FileAnalytics[]
   Files         File[]
+  wallet        Wallet?
+  Transactions  WalletTransaction[]
+  billingMethods  BillingMethod[]          
+}
+
+enum AccountStatus {
+  PROCESSING
+  ACTIVE
+  DISABLED
+  FAILED
 }
 
 enum UserRole {
@@ -71,7 +82,7 @@ model File {
   fileSize      Int // size in bytes
   thumbnailUrl  String?
   totalViews    Int             @default(0) // total number of views
-  uploadedDate  String          
+  uploadedDate  String
   originalOwner String          @db.ObjectId // userId of original uploader
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -101,4 +112,78 @@ model FileAnalytics {
 
   @@unique([fileId, userId, date])
   @@map("FileAnalytics")
+}
+
+model Wallet {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  total     Float    @default(0)
+  paid      Float    @default(0)
+  available Float    @default(0)
+  pending   Float    @default(0)
+  canceled  Float    @default(0)
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model WalletTransaction {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String            @db.ObjectId
+  amount      Float
+  type        TransactionType   @default(EARNING)
+  status      TransactionStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  referenceId String?
+  note        String?
+
+  user        User              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+enum TransactionType {
+  EARNING
+  PAYOUT
+  BONUS
+  REFERRAL
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  PAID
+  CANCELED
+}
+
+model BillingMethod {
+  id           String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String            @db.ObjectId
+  type         BillingType
+  status       BillingStatus     @default(PENDING)
+  details      Json              // flexible details like UPI ID, bank account, etc.
+  verified     Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+enum BillingType {
+  UPI
+  PAYPAL
+  BANK_TRANSFER
+  STRIPE
+  OTHER
+}
+
+enum BillingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISABLED
 }

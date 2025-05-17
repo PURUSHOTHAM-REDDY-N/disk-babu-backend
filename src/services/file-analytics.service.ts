@@ -28,18 +28,17 @@ export const getUserAnalyticsByMonth = async (userId: string, date:Date) => {
   return await provider.getUserAnalyticsByMonth(userId, date);
 };
 
-export const getUserMonthlyAnalyticsTotals = async (userId: string, date: Date) => {
+export const getUserMonthlyAnalyticsTotals = async (userId: string, date: string) => {
 
-  const startOfMonth = moment(date).startOf("month").toDate();
-  const endOfMonth = moment(date).endOf("month").toDate();
+  
 
   const [analytics, uploadCount] = await Promise.all([
-    provider.getUserMonthlyAnalyticsTotals(userId, startOfMonth, endOfMonth),
-    getUserFileUploadCountByMonth(userId, startOfMonth),
+    provider.getUserMonthlyAnalyticsTotals(userId, date),
+    getUserFileUploadCountByMonth(userId, date),
   ]);
 
   return {
-    month: date.toISOString().slice(0, 7),
+    month: moment(date).toISOString(),
     views: analytics.views,
     earnings: analytics.earnings,
     uploads: uploadCount,

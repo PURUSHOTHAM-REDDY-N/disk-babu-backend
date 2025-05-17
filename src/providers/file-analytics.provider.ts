@@ -138,15 +138,16 @@ export const getUserAnalyticsByMonth = async (userId: string, date: Date) => {
 // total views and earnings for a given user in a given month
 export const getUserMonthlyAnalyticsTotals = async (
   userId: string,
-  start: Date,
-  end: Date
+  date: string,
 ) => {
+  const startOfMonth = moment.utc(date).startOf("month").toISOString();
+  const endOfMonth = moment.utc(date).endOf("month").toISOString();
   const result = await prisma.fileAnalytics.aggregate({
     where: {
       userId,
       date: {
-        gte: start,
-        lt: end,
+        gte: startOfMonth,
+        lt: endOfMonth,
       },
     },
     _sum: {
