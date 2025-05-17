@@ -75,7 +75,7 @@ model EmailTemplate {
 
 model File {
   id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
+  fileName         String
   description   String?
   fileUrl       String // uploaded file URL or external link
   fileType      String // e.g., image, video, audio, document

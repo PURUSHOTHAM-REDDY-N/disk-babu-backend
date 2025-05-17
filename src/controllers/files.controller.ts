@@ -15,7 +15,7 @@ router.post(
     // const todayIst = moment.tz(date, "Asia/Kolkata").utc().toDate();
     const todayStart = moment.utc().startOf("day").toISOString();
     const video = {
-      title: body.title,
+      fileName: body.title,
       description: body.description,
       fileUrl: body.fileUrl,
       fileType: body.fileType,
