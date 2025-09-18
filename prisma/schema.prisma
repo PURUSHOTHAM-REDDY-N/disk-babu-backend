@@ -24,10 +24,11 @@ model User {
   status     AccountStatus @default(ACTIVE)
 
   FileAnalytics  FileAnalytics[]
-  Files          File[]
+  OriginalFiles  File[]              @relation("OriginalFiles")
+  CopiedFiles    File[]              @relation("CopiedFiles") // newly added
   wallet         Wallet?
   Transactions   WalletTransaction[]
-  billingMethods BillingMethod[]
+  billingDetails Json?
 }
 
 enum AccountStatus {
@@ -74,21 +75,34 @@ model EmailTemplate {
 }
 
 model File {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  fileName      String
-  description   String?
-  fileUrl       String // uploaded file URL or external link
-  fileType      String // e.g., image, video, audio, document
-  fileSize      Int // size in bytes
-  thumbnailUrl  String?
-  totalViews    Int             @default(0) // total number of views
-  uploadedDate  String
-  originalOwner String          @db.ObjectId // userId of original uploader
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  status        FileStatus      @default(ACTIVE)
-  analytics     FileAnalytics[] // daily/monthly analytics
-  user          User            @relation(fields: [originalOwner], references: [id])
+  id                 String          @id @default(auto()) @map("_id") @db.ObjectId
+  fileName           String
+  description        String?
+  fileType           String // e.g., image, video, audio, document
+  fileSize           Int // size in bytesmn
+  fileExtension      String // e.g., .jpg, .mp4, .pdf
+  thumbnailUrl       String?
+  storageProvider    String // e.g., AWS, Google Cloud, etc.
+  storageKey         String // key or path in the storage service
+  referralEarnings   Float           @default(0) // earnings from referrals for this file
+  totalViews         Int             @default(0) // total number of views
+  uploadedDate       String
+  originalUserFileID String?         @db.ObjectId // userId of the original uploader
+  currentOwner       String          @db.ObjectId // userId of current owner (if transferred)
+  originalOwner      String          @db.ObjectId // userId of original uploader
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  source             FileSource      @default(NO_SOURCE) // source of the file (e.g., web upload, API)
+  status             FileStatus      @default(ACTIVE)
+  analytics          FileAnalytics[] // daily/monthly analytics
+  OriginalFiles      User            @relation("OriginalFiles", fields: [originalOwner], references: [id])
+  CopiedFiles        User            @relation("CopiedFiles", fields: [currentOwner], references: [id])
+}
+
+enum FileSource {
+  NO_SOURCE
+  WEB_UPLOAD
+  CLONE
 }
 
 enum FileStatus {
@@ -99,46 +113,55 @@ enum FileStatus {
 }
 
 model FileAnalytics {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  fileId    String   @db.ObjectId
-  userId    String   @db.ObjectId
-  date      DateTime @db.Date
-  views     Int      @default(0)
-  earnings  Float    @default(0) // earnings for this user on this file in this period
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  file      File     @relation(fields: [fileId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  fileId          String   @db.ObjectId
+  userId          String   @db.ObjectId
+  date            DateTime @db.Date
+  referalEarnings Float    @default(0) // earnings from referrals for this file
+  views           Int      @default(0)
+  earnings        Float    @default(0) // earnings for this user on this file in this period
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  file            File     @relation(fields: [fileId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
 
   @@unique([fileId, userId, date])
   @@map("FileAnalytics")
 }
 
 model Wallet {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @unique @db.ObjectId
-  total     Float    @default(0)
-  approved  Float    @default(0)
-  paid      Float    @default(0)
-  pending   Float    @default(0)
-  canceled  Float    @default(0)
-  updatedAt DateTime @updatedAt
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String       @unique @db.ObjectId
+  available Float        @default(0)
+  approved  Float        @default(0)
+  paid      Float        @default(0)
+  pending   Float        @default(0)
+  cancelled Float        @default(0)
+  status    WalletStatus @default(ACTIVE)
+  updatedAt DateTime     @updatedAt
+  createdAt DateTime     @default(now())
 
   user User @relation(fields: [userId], references: [id])
 }
 
-model WalletTransaction {
-  id          String            @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String            @db.ObjectId
-  amount      Float
-  type        TransactionType   @default(EARNING)
-  status      TransactionStatus @default(PENDING)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  referenceId String?
-  note        String?
+enum WalletStatus {
+  ACTIVE
+  DISABLED
+  REMOVED
+}
 
-  user User @relation(fields: [userId], references: [id])
+model WalletTransaction {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String            @db.ObjectId
+  amount         Float
+  type           TransactionType   @default(EARNING)
+  status         TransactionStatus @default(PENDING)
+  billingDetails Json
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  referenceId    String?
+  note           String?
+  user           User              @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
@@ -156,34 +179,4 @@ enum TransactionStatus {
   APPROVED
   PAID
   CANCELED
-}
-
-model BillingMethod {
-  id        String        @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String        @db.ObjectId
-  type      BillingType
-  status    BillingStatus @default(PENDING)
-  details   Json // flexible details like UPI ID, bank account, etc.
-  verified  Boolean       @default(false)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-}
-
-enum BillingType {
-  UPI
-  PAYPAL
-  BANK_TRANSFER
-  STRIPE
-  OTHER
-}
-
-enum BillingStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  DISABLED
 }

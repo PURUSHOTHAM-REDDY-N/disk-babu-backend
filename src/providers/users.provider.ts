@@ -2,6 +2,7 @@ import {RegisterInput} from "../models/auth.model";
 import bcrypt from "bcrypt";
 import prisma from "../../prisma/prisma-client";
 import {User} from "@prisma/client";
+import { createWallet } from "./wallet.provider";
 
 export const createUser = async (input: RegisterInput) => {
     const email = input.email?.trim();
@@ -23,7 +24,13 @@ export const createUser = async (input: RegisterInput) => {
             password: hashedPassword,
             createdAt: new Date()
         }
+    }).then(async (user) => {
+        await createWallet(user.id);
+        return user;
     });
+
+
+    
 
     return user;
 };
@@ -65,5 +72,18 @@ export const updateUser = async (id: string, input: User) : Promise<User> => {
 
     return user;
 };
+
+export const updatedUserBillingDetails = async (id: string, billingDetails: any) : Promise<User> => {
+    const user = await prisma.user.update({
+        where:{
+            id:id
+        },
+        data: {
+            billingDetails: billingDetails
+        }
+    });
+
+    return user;
+}
 
 

@@ -6,3 +6,4 @@
 # Elastic Beanstalk Files
 /.elasticbeanstalk/config.yml
 /.elasticbeanstalk/
+sample.ts

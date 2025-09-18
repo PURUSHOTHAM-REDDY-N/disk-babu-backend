@@ -8,7 +8,7 @@
     "test": "jest -i",
     "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts dev",
     "generate": "prisma generate",
-    "dbpush":"prisma db push",
+    "dbpush": "prisma db push",
     "start": "tsc && node dist/src/index.js",
     "deploy": "npm run build & eb deploy",
     "prisma:migrate": "prisma migrate dev --skip-seed",
@@ -25,7 +25,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.658.0",
+    "@aws-sdk/client-s3": "^3.821.0",
+    "@aws-sdk/s3-request-presigner": "^3.821.0",
     "@prisma/client": "^5.20.0",
     "@types/speakingurl": "^13.0.6",
     "aws-sdk": "^2.1602.0",

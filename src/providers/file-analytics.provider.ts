@@ -2,10 +2,12 @@
 import moment from "moment-timezone";
 import prisma from "../../prisma/prisma-client";
 import { getUserDailyFileCount } from "./file.provider";
-
-const RATE_PER_VIEW = 0.002;
+import { updateWalletAvailableBalance } from "./wallet.provider";
 
 export const upsertDailyAnalytics = async (fileId: string, userId: string) => {
+  const RATE_PER_VIEW = 0.002;
+  const REFERRAL_RATE_PER_VIEW = 0.0001;
+
   const today = moment.utc().startOf("day").toISOString(); // UTC start
   const [fileAnalytics, file] = await Promise.all([
     prisma.fileAnalytics.upsert({
@@ -28,24 +30,46 @@ export const upsertDailyAnalytics = async (fileId: string, userId: string) => {
       where: { id: fileId },
       data: { totalViews: { increment: 1 } },
     }),
+    updateWalletAvailableBalance(userId, "increment", RATE_PER_VIEW),
   ]);
+  // this is to handle the case where we caliculate referral earnings
+  // for the original owner of the file if it was uploaded by a different user
+  const originalOwner = file?.originalOwner;
+  const currentOwner = file?.currentOwner;
+  if (
+    file.originalUserFileID &&
+    originalOwner &&
+    originalOwner !== currentOwner
+  ) {
+    const [fileOwnerAnalytics, ownerFile] = await Promise.all([
+      prisma.fileAnalytics.upsert({
+        where: {
+          fileId_userId_date: {
+            fileId: file.originalUserFileID,
+            userId: originalOwner,
+            date: today,
+          },
+        },
+        update: {
+          referalEarnings: { increment: REFERRAL_RATE_PER_VIEW },
+        },
+        create: {
+          fileId: file.originalUserFileID,
+          userId: originalOwner,
+          date: today,
+          views: 0,
+          referalEarnings: REFERRAL_RATE_PER_VIEW,
+        },
+      }),
+      prisma.file.update({
+        where: { id: file.originalUserFileID },
+        data: { referralEarnings: { increment: REFERRAL_RATE_PER_VIEW } },
+      }),
+      updateWalletAvailableBalance(userId, "increment", REFERRAL_RATE_PER_VIEW),
+    ]);
+  }
 
   return fileAnalytics;
-};
-
-export const getAnalyticsByDateAndFile = async (
-  fileId: string,
-  userId: string,
-  date: Date
-) => {
-  // const day = new Date(date);
-  // day.setUTCHours(0, 0, 0, 0); // Normalize to start of that day
-  const utcDate = moment.utc(date).startOf("day").toISOString();
-  return prisma.fileAnalytics.findUnique({
-    where: {
-      fileId_userId_date: { fileId, userId, date: utcDate },
-    },
-  });
 };
 
 export const getUserDailyTotalAnalytics = async (
@@ -100,7 +124,7 @@ export const getUserAnalyticsByMonth = async (userId: string, date: Date) => {
     prisma.file.groupBy({
       by: ["uploadedDate"],
       where: {
-        originalOwner: userId,
+        currentOwner: userId,
         uploadedDate: {
           gte: startOfMonth,
           lt: endOfMonth,
@@ -138,7 +162,7 @@ export const getUserAnalyticsByMonth = async (userId: string, date: Date) => {
 // total views and earnings for a given user in a given month
 export const getUserMonthlyAnalyticsTotals = async (
   userId: string,
-  date: string,
+  date: string
 ) => {
   const startOfMonth = moment.utc(date).startOf("month").toISOString();
   const endOfMonth = moment.utc(date).endOf("month").toISOString();

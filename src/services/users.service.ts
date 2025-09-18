@@ -40,3 +40,12 @@ export const editUser = async (user: User, input: User) => {
 
     return user;
 };
+
+export const updatedUserBillingDetails = async (user: User, billingDetails: any) => {
+    if (!billingDetails) {
+        throw new Error("Billing details are required.");
+    }
+    user = await usersProvider.updatedUserBillingDetails(user.id, billingDetails);
+
+    return user;
+}
